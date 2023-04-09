@@ -1,6 +1,0 @@
-export { default as i18n } from './i18n'
-export { default as DigitalHuman } from './DigitalHuman'
-export { default as Feedback } from './Components/endSession/Feedback'
-export { default as FatalError } from './Components/Errors/FatalError'
-export { default as UnsupportedBrowser } from './Components/UnsupportedBrowser'
-export { default as PasscodeOverlay } from './Components/PasscodeOverlay'

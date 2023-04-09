@@ -1,7 +1,13 @@
-FROM node
-WORKDIR /
-COPY . ./
-RUN ls
-RUN yarn install
-EXPOSE 3000
-CMD ["yarn", "start"]
+FROM node:12.18-alpine
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 8080
+
+CMD [ "npm", "start" ]

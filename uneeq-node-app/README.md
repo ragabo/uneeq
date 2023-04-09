@@ -1,300 +1,278 @@
-# Project Description
+# uneeq-integration
 
-An example-only UneeQ frontend UI project built using uneeq-js SDK and React. This codebase serves as an example for the developers of UneeQ’s partners / customers to build their own frontend project.
+This is an implementation of a REST API which performs three functions;
 
-# Project delivered as-is
+1. Digital human conversation (solicited and unsolicited)
+2. Single use token requests
+3. Diagnostics
 
-There is no support express or implied for this repository. While we take care to ensure compatibility and update dependencies from time to time for security reasons, you are encouraged to do your own due diligence on the dependencies used with this project. Neither P22 nor UneeQ are responsible for any issues or trouble, damages or conflicts arising from your use of this project. Please see [LICENCE.md](./LICENCE.md) for full licence.
+### 1. Digital human conversation
 
-Please see [LICENCE.md](./LICENCE.md) for full licence.
+This application implements conversation platform integration with a UneeQ digital human (as documented at https://docs.uneeq.io/#/chatbot_integration?id=conversation-platform-integration-overview). The application can be configured to connect a UneeQ digital human to Dialogflow, Dialogflow CX, Watson, Lex, Wolfram Alpha, and Directline concurrently. The application creates six POST routes, with the paths configurable in the environment variables (see below) - if configured, this allows a single instance of this integration application to connect to any of the six platforms, by configuring the digital human to make requests to the associated route (using the 'Other Conversation Platform' options in UneeQ Creator).
 
-# Packages
+The application also implements the unsolicited response or 'speak' API (as documented at https://docs.uneeq.io/#/unsolicited_responses?id=unsolicited-responses-overview), which allows responses to be pushed to a digital human during a conversation without first being triggered by an end user input. This allows for both synchronous and asynchronous interactions between the end user and the digital human.
 
-## uneeq-react-core
+### 2. Single use token requests
 
-Provides React state management for uneeq-js-sdk
+The application also implements the token request API (as documented at https://docs.uneeq.io/#/access_token?id=obtaining-an-access-token). This allows a web frontend implementing the UneeQ SDK to request a single use token which can be used to start a conversation.
 
-## uneeq-react-ui
+### 3. Diagnostics
 
-Provides a generic, customisable user interface
+There are also two diagnostic routes. The "/parrot" route will return a response payload which echoes the user input, which allows the interface to be tested without requiring a round trip to an NLP service. The "/ping" route returns a heartbeat response which allows the application to work with load balancers and monitoring applications.
 
-## uneeq-download-pdf
+<p>&nbsp;</p>
 
-Renders PDFs of a conversation transcript or user-saved information for download
+**This code is made available as is, for use by customers and partners to quickly implement their own integration of a digital human with NLP services or the speak API. However this is sample code ONLY and is not intended for production deployment, and no support or warranty is given expressly or implied in any form. All material is subject to the license included in this repository.**
 
-# Getting Started
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 
-## Create your own copy of this repo
+---
 
-[Fork on Gitlab](fork)
+# Prerequisites
 
-**or**
+You must have a UneeQ Creator account (https://creator.uneeq.io/register) with a configured digital human persona.
 
-Clone [uneeq-oss/react-frontend](repo) as "upstream"
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 
-> `git clone --origin upstream git@gitlab.com:uneeq-oss/react-frontend.git`
+---
 
-Add your own remote as "origin"
+# Environment
 
-> `git remote add origin git@github.com:you/your_repo.git`
+Several environment variables are required - where you place these will depend on your deployment (e.g. these can be placed in a local .env file or as variables in your application platform). This repo contains an empty .env.default file for convenience.
 
-## Create your project
+Only the variables for the service being configured are required - others can be ignored. Any service not explicitly set to true will be ignored, and the route will also not be bound (so that 404 not found responses are triggered).
 
-Create a copy of the directory `example-app`.
+For clarity, the environment variables are grouped by purpose below - NLP Services, UneeQ API Services, SSML Parameters (which allow you to add markup to plain text), and Common.
 
-> `cp example-app my-app`
+---
 
-Edit `package.json`
+## NLP Services
 
-- Add your new app to `workspaces`
-- Add `dev` and `build` scripts
-- Edit the default `build` and `start` scripts _(optional)_
+#### Common (required)
 
-e.g.
-
-```JSON
-...
-"workspaces": [
-  "packages/*",
-  "example-app",
-  "my-app"
-],
-"scripts": {
-  "start-my-app-only": "yarn workspace my-app start",
-  "start-my-app": "concurrently \"yarn:start-packages\" \"yarn:start-my-app-only\"",
-  "build-my-app-only": "yarn workspace my-app build",
-  "build-my-app": "yarn build-packages && yarn build-example-only",
-
-  "start": "yarn start-my-app",
-  "build": "yarn build-my-app",
-
-  ...
-}
-...
+```
+API_ROUTE_NLP_STEM (the stem for all the NLP routes - defaults to "/nlp")
+AUTHORIZATION_REQUIRED (true/false - whether to require an 'Authorization' header passing the shared secret configured below)
+AUTHORIZATION_HEADER (shared secret - UneeQ supports the sending of custom headers for basic authorization - only required if AUTHORIZATION_REQUIRED is true)
 ```
 
-## Configure
+#### If using Dialogflow (optional)
 
-Rename `my-app/.env.example` to `.env`, add your UneeQ details
-
-## Install Dependencies
-
-Run `yarn install`
-
-## Run Locally
-
-Run `yarn start`
-
-## Customize
-
-Edit `my-app/src/config.js`
-
-## Build for Production
-
-Run `yarn build`  
-Copy `my-app/build` to your webserver
-
-## Update
-
-Avoid editing code withing `packages`. This will allow you to update your fork from [react-frontend](repo) in future.
-
-Read the CHANGELOG to understand any changes that have been made, especially breaking changes.
-
-Update your local:
-
-<!-- TODO: Should we suggest merging a specific version by tag?-->
-
-```sh
-git fetch upstream
-git merge upstream/master
+```
+API_ROUTE_NLP_DIALOGFLOW (path for your Dialogflow API, defaults to "/dialogflow")
+DIALOGFLOW_ENABLED (true/false - will prevent the route from trying to call the API if you're not using this platform)
+DIALOGFLOW_CONFIG_PROJECTID (your Dialogflow project ID)
+DIALOGFLOW_CONFIG_PROJECTLANGUAGE (Dialogflow project language code, e.g en-US)
+DIALOGFLOW_CONFIG_USEKNOWLEDGEBASE (true/false whether to query a knowledge base in your agent)
+DIALOGFLOW_CONFIG_PROJECTKNOWLEDGEBASE (Knowledge base name in path form - e.g. projects/<<projectID>>/knowledgeBases/<<knowledgeBaseId>>)
+DIALOGFLOW_CONFIG_CREDENTIALS (stringified credential JSON to connect to your agent)
 ```
 
-See [Syncing a fork](fork-sync) for more.
+#### If using Dialogflow CX (optional)
 
-# Integration
+```
+API_ROUTE_NLP_DIALOGFLOWCX (path for your Dialogflow CX API, defaults to "/dialogflowcx")
+DIALOGFLOWCX_ENABLED (true/false - will prevent the route from trying to call the API if you're not using this platform)
+DIALOGFLOWCX_CONFIG_PROJECTID (your Dialogflow CX project ID)
+DIALOGFLOWCX_CONFIG_PROJECTLANGUAGE (Dialogflow CX project language code, e.g en-US)
+DIALOGFLOWCX_CONFIG_AGENT (Dialogflow CX allows multiple agents per project, so requires the agent ID)
+DIALOGFLOWCX_CONFIG_LOCATION (Dialogflow CX project location, usually 'global')
+DIALOGFLOWCX_CONFIG_CREDENTIALS (stringified credential JSON to connect to your agent)
+DIALOGFLOWCX_CONFIG_ENVIRONMENT (Dialogflow CX environment as defined in CX, e.g. Draft, Production)
+```
 
-## Commands
+#### If using Lex (optional)
 
-Commands can be sent to control the front-end UI. They must be send as stringified JSON within instructions->displayHtml->html
+```
+API_ROUTE_NLP_LEX (path for your Lex API, defaults to "/lex")
+LEX_ENABLED (as above)
+LEX_CONFIG_AWSREGION (the region in which your bot is configured, e.g. us-east-1)
+LEX_CONFIG_ACCESSKEYID (the access key for an IAM account)
+LEX_CONFIG_SECRETACCESSKEY (the secret access key for the above account)
+LEX_CONFIG_BOTALIAS=$LATEST (defaults to $LATEST)
+LEX_CONFIG_BOTNAME (the name of your bot)
+LEX_CONFIG_WELCOMEINTENT (the name of the intent you want to trigger as the welcome message)
+```
 
-```json
+#### If using Watson (optional)
+
+```
+API_ROUTE_NLP_WATSON (path for your Watson API, defaults to "/watson")
+WATSON_ENABLED (as above)
+WATSON_CONFIG_IAMAPIKEY (API key for your Watson resource)
+WATSON_CONFIG_ASSISTANTID (the ID for your Assistant - not the individual skill)
+WATSON_CONFIG_ENDPOINTURI (the endpoint address for your Watson resource)
+```
+
+#### If using Wolfram Alpha (optional)
+
+```
+API_ROUTE_NLP_WOLFRAM (path for your Wolfram Alpha API, defaults to "/wolfram")
+WOLFRAM_ENABLED (as above)
+WOLFRAM_CONFIG_APPID (an AppID issued by Wolfram to access the conversation API)
+WOLFRAM_CONFIG_APIBASEURL="http://api.wolframalpha.com" (the current default)
+WOLFRAM_CONFIG_APIROUTE="/v1/conversation.jsp?appid=" (the current default)
+WOLFRAM_CONFIG_QUERYPARAM=i (the current default)
+WOLFRAM_CONFIG_SESSIONPARAM=conversationid (the current default)
+WOLFRAM_CONFIG_GREETING="Hi there. Ask me a question and I'll see what Wolfram Alpha has to say." (a friendly greeting - Wolfram is not built for chit-chat!)
+WOLFRAM_CONFIG_NOTFOUNDMSG="Sorry. It looks like Wolfram Alpha doesn't have an answer for that question. Try another one!" (as above)
+```
+
+#### If using Directline (optional)
+
+```
+API_ROUTE_NLP_DIRECTLINE (path for your Directline API, defaults to "/directline")
+DIRECTLINE_ENABLED (as above)
+DIRECTLINE_CONFIG_SECRET (from your bot exposed through the Directline channel, the API secret)
+DIRECTLINE_CONFIG_SCENARIO (required for Health Bot implementations - the scenario to be triggered on welcome)
+DIRECTLINE_CONFIG_LOCALE (the language locale)
+```
+
+---
+
+## UneeQ API Services
+
+#### If using the token route (optional)
+
+```
+API_ROUTE_TOKEN (path for your token request API, defaults to "/token")
+TOKEN_ROUTE_ENABLED (true/false - will prevent the route from trying to call the API if you're not using the token service)
+TOKEN_UNEEQ_URL (the URL for the UneeQ API as shown in your Developer dashboard in Creator - e.g. https://api.us.uneeq.io)
+TOKEN_UNEEQ_ROUTE=/api/v1/clients/access/tokens (the route in the token request documentation)
+TOKEN_UNEEQ_JWTSECRET (your JWT secret as shown in your Developer dashboard in Creator)
+TOKEN_UNEEQ_PERSONAID (the persona ID to start the conversation with, as shown in the Personas dashboard in Creator)
+```
+
+#### If using the unsolicited response/'speak' route (optional)
+
+```
+API_ROUTE_SPEAK (path for your token request API, defaults to "/speak")
+SPEAK_ROUTE_ENABLED (true/false - will prevent the route from trying to call the API if you're not using the speak service)
+SPEAK_UNEEQ_URL (the URL for the UneeQ API as shown in your Developer dashboard in Creator - e.g. https://api.us.uneeq.io)
+SPEAK_UNEEQ_ROUTE=/api/v1/avatar/ (the route in the speak request documentation)
+SPEAK_UNEEQ_JWTSECRET (your JWT secret as shown in your Developer dashboard in Creator - for security this is used for signature verification on calls to your API, and to then encode the request before sending to UneeQ)
+```
+
+---
+
+## SSML Parameters
+
+```
+SSML_ENFORCED (if true, SSML is added to plain text responses before the response JSON is generated)
+SSML_AUTO_BREAKS (if SSML is enforced and this variable is true, punctuation marks defined in the array below are augmented with SSML break tags )
+SSML_AUTO_BREAKS_VALUES (an array of objects with mark, attribute, and strength properties - the 'mark' values define which punctuation marks are augmented, the 'attribute' value defines what type of break tag is written (applies the SSML standard, so strength or time) along with the 'value e.g. [{ "mark": ",", "attribute": "strength", "value": "weak" }, { "mark": ".", "attribute": "strength", "value": "strong" }] )
+SSML_AMAZON_NEURAL (if true, this adds the speak tags that comply with the Amazon Polly neural style)
+SSML_AMAZON_NEURAL_STYLE (if the NEURAL property is true, defines either the "conversational" or "news" style)
+```
+
+---
+
+## Common
+
+```
+LOG_LEVEL (output log level - accepts error, warn, info, verbose, debug)
+API_ROUTE (the stem for your API routes, defaults to "/api/v1")
+```
+
+---
+
+## Other
+
+```
+API_ROUTE_PARROT (path for your parrot API, defaults to "/parrot")
+PARROT_ROUTE_ENABLED (same effect as all other routes)
+```
+
+UneeQ's platform requires that third-party integration apps must be deployed with an SSL endpoint. The URL for your app will be required when configuring the digital human persona to use your conversation interface - e.g. https://<<yourapp>>/api/(dialogflow/lex/watson). Note that if you choose to require an authorization header for your app (as above) this must be configured by UneeQ.
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+---
+
+# Containerising
+
+The repo includes a simple Dockerfile which will produce a docker image:
+
+```
+docker build -t uneeq-integration .
+```
+
+The environment variables can be passed at runtime by creating a file at the root level called env.list (use .env.default as the template) and running the docker image with the --env-file option:
+
+```
+docker run [...] --env-file ./env.list -d uneeq-integration
+```
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+---
+
+# Testing
+
+A full end-to-end test of all enabled platforms (\_ENABLED=true) can be run with npm test.
+
+The app can also be tested using Postman (or equivalent) with the sample JSON payloads at docs.uneeq.io. The first request in a conversation will have a 'type' value of 'WELCOME', which will trigger your welcome intent (note that for Lex you must configure a specific Welcome intent - see the variables above):
+
+```
 {
-  "instructions": {
-    "displayHtml": {
-      "html": "{\"openInputBar\":true}"
-    }
-  }
+"sid": "set during token request",
+"fm-custom-data": "{\"custom-data\":\"set during token request\"}",
+"fm-question": "",
+"fm-avatar": "{\"type\":\"WELCOME\",\"avatarSessionId\":\"123456789\"}",
+"fm-conversation": null
 }
 ```
 
-```js
-const command = { openInputBar: true };
-const x = {
-  instructions: {
-    displayHtml: {
-      html: JSON.stringify(command),
-    },
-  },
-};
+Subsequent inputs from the end user will produce request payloads with a 'type' value of 'QUESTION', which will trigger any matched intent in your Dialogflow agent.
+
 ```
-
-## Available Commands
-
-### Keyboard input bar trigger
-
-Switch to text input mode so the user can type a response. Useful in combination with a response like "Sorry, I didn't understand you. Could you please type that?". `true` indicates switching to text input mode, `false` indicates switching back to speach input.
-
-**Command**: `{"openInputBar": true}`
-
-### Chat window trigger
-
-Show the transcript window. `true` indicates showing the users transcript, `false` indicates hiding/closing the transcript.
-
-**Command**: `{"openTranscript": true}`
-
-### Suggested responses
-
-The content of suggested responses will only be triggered from the NLP platform. The suggested responses have a title and each has a label to be displayed on screen along with an utterance to be send when the user clicks that response.
-
-**Command**:
-
-```JSON
 {
- 	"mainTitle": "Call to action text: ",
-   "imageUrl":"",
- 	"suggestedResponses": [{
- 		"label": "Suggested Response #1",
- 		"utterance": "response 1"
- 	}, {
- 		"label": "Suggested Response #2",
- 		"utterance": "response 2"
- 	}, {
- 		"label": "Suggested Response #3",
- 		"utterance": "response 3"
- 	}]
- }
-```
-
-### On-screen information trigger
-
-The information content can only be triggered from the NLP platform. This is used to provide users with useful snippets of information.
-
-#### Video
-
-**Command**: `{ "information": [{ "type": "video", "source": "https://www.youtube.com/embed/rF2u7RTPsHI"}] }`
-
-Full example (including heading):
-
-```json
-{
-  "instructions": {
-    "displayHtml": {
-      "html": "{\"information\": [{\"type\": \"heading\", \"text\": \"Video heading here\"},{ \"type\": \"video\", \"source\": \"https://www.youtube.com/embed/rF2u7RTPsHI\", \"width\": \"100%\", \"height\": \"375\"}]}"
-    }
-  }
+"sid": "set during token request",
+"fm-custom-data": "{\"custom-data\":\"set during token request\"}",
+"fm-question": "I want to make a booking",
+"fm-avatar": "{\"type\":\"QUESTION\",\"avatarSessionId\":\"123456789\"}",
+"fm-conversation": "{\"platformSessionId\":\"<<RETURNED BY YOUR CONVERSATION PLATFORM>>\"}"
 }
 ```
 
-##### Information "video" Type Properties
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 
-These properties can be changed to adjust the sizing and appearance of the video.
-Additionally the source value can be changed to suit any embed URL of services
-where the original embed code is an iframe (e.g. Vimeo)
+---
 
-The video information type has not been tested with videos hosted on Amazon S3 or similar services.
+# Configuring
 
-| property | value                                     | type            | required |
-| -------- | ----------------------------------------- | --------------- | -------- |
-| type     | video                                     | string          | yes      |
-| source   | https://www.youtube.com/embed/xxxxxxx     | string          | yes      |
-| width    | 100% (default) or numeric value           | string / number | no       |
-| height   | 375 (default) or numeric/percentage value | string / number | no       |
+## NLP Services and the Parrot Service APIs
 
-#### Markdown
+Once the application is deployed, configured and tested (see below), use the persona configuration dashboard in Creator to choose 'Other Conversation Platform' as the platform for the persona, and enter the fully qualified URL for your interface (e.g. https://<<your-host>>/api/v1/nlp/dialogflow - would be the path for the Dialogflow service if using the default paths, and https://<<your-host>>/api/v1/parrot as the path for parrot). Starting a conversation with the persona through Creator will then either begin a conversation with the corresponding NLP service, or repeat your input if using parrot.
 
-**Command**: `{ "information": "#Heading\nInformaion\n[link](http://example.com)" }`
+## Unsolicited Responses ('Speak') API
 
-See [On-screen information markdown](#On-screen-information-markdown) below for more
-
-### Feedback form trigger
-
-Ability to trigger the feedback form from within the conversation. `true` indicates to show the feedback dialog.
-
-**Command**: `{"openFeedback": true}`
-
-### Human escalation form trigger
-
-Ability to trigger the human escalation form from within the conversation which includes prompting the user for email address (if email address have not been previously provided). `true` indicates showing the escalation form.
-
-**Command**: `{"openEscalationForm": true}`
-
-# On-screen information markdown
-
-[Markdown Cheatsheet](markdown-cheatsheet)
-
-## Currently Supported tokens
-
-- Headings: `# Heading`
-- Bold: `**bold**`
-- Italic: `*italic*`
-- Lists: `- list item`
-- Links: `[link](http://example.com)`
-- Images: `![alt text](http://example.com/icon.png "Title")`
-
-## Clickable suggested responses in markdown
-
-URLs can be in format `say:UTTERANCE` where `UTTERANCE` is the word or phrase that should be automatically spoken to the digital human when the link is clicked.
-
-E.g.
+Once a conversation has been established with a persona, passing this payload to the speak route (e.g. https://<<your-host>>/api/v1/speak if using the defaults) will cause the digital human to speak the dialog in the answer field;
 
 ```
-[link](say:URL encoded utterance)
+{
+"answer": "I'm giving an unsolicited response",
+"answerAvatar": "{}",
+"sessionId": "AVATAR_SESSION_ID"
+}
 ```
 
-Full example:
+This API allows for asynchronous responses from the digital human, which means if you have long-running transactions that are being triggered by conversation you can send an immediate response/acknowledgement, and then 'push' a completion message when the transaction has finished. You need the avatarSessionId (passed in the fm-avatar field with each request) and pass it in the sessionId field.
 
-```
-{ "information": "#Choose An Option: \n\n[Accept the deal](say:Yes I would like the deal)" }
-```
+## Token Requests
 
-# Update policy
+Sending a GET request to the token route will return a single use token, which can then be passed as the tokenId parameter to the initWithToken method to begin a new conversation.
 
-- Semver
-- Fixes may not be ported to older versions
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 
-# Test
+---
 
-TODO
+# License
 
-## testState
-
-Allows the welcome & initialisation to be skipped to go directly to a certain state
-
-- Base [testState=%7B%7D](http://localhost:3000/?testState=%7B%7D)
-- Loading [testState=%7B%22ready%22%3Afalse%2C%22loadingPercentage%22%3A40%7D](http://localhost:3000/?testState=%7B%22ready%22%3Afalse%2C%22loadingPercentage%22%3A40%7D)
-- Busy [testState=%7B%22unavailable%22%3Atrue%7D](http://localhost:3000/?testState=%7B%22unavailable%22%3Atrue%7D)
-- Declined [testState=%7B%22permissionAllowed%22%3Afalse%7D](http://localhost:3000/?testState=%7B%22permissionAllowed%22%3Afalse%7D)
-- Transcript [testState=%7B%22transcriptOpen%22%3Atrue%2C%22transcript%22%3A%5B%7B%22message%22%3A%22Does%20this%20look%20right%3F%22%2C%22time%22%3A%221970-01-01T00%3A00%3A00.000Z%22%2C%22user%22%3Afalse%7D%2C%7B%22message%22%3A%22Yes%22%2C%22time%22%3A%221970-01-01T00%3A00%3A00.000Z%22%2C%22user%22%3Atrue%7D%5D%7D](http://localhost:3000/?testState=%7B%22transcriptOpen%22%3Atrue%2C%22transcript%22%3A%5B%7B%22message%22%3A%22Does%20this%20look%20right%3F%22%2C%22time%22%3A%221970-01-01T00%3A00%3A00.000Z%22%2C%22user%22%3Afalse%7D%2C%7B%22message%22%3A%22Yes%22%2C%22time%22%3A%221970-01-01T00%3A00%3A00.000Z%22%2C%22user%22%3Atrue%7D%5D%7D)
-- Transcript Minimised [testState=%7B%22transcriptHasOpened%22%3Atrue%7D](http://localhost:3000/?testState=%7B%22transcriptHasOpened%22%3Atrue%7D)
-- User Question [testState=%7B%22question%22%3A%22Does%20this%20look%20right%3F%22%7D](http://localhost:3000/?testState=%7B%22question%22%3A%22Does%20this%20look%20right%3F%22%7D)
-- With Saved Items [testState=%7B%22savedItems%22%3A%5B0%5D%7D](http://localhost:3000/?testState=%7B%22savedItems%22%3A%5B0%5D%7D)
-- Input Error [testState=%7B%22noInput%22%3Atrue%7D](http://localhost:3000/?testState=%7B%22noInput%22%3Atrue%7D)
-- With Saved Items and Minimised Transcript [testState=%7B%22savedItems%22%3A%5B0%5D%2C%22transcriptHasOpened%22%3Atrue%7D](http://localhost:3000/?testState=%7B%22savedItems%22%3A%5B0%5D%2C%22transcriptHasOpened%22%3Atrue%7D)
-- Text Input [testState=%7B%22inputMode%22%3A%22text%22%7D](http://localhost:3000/?testState=%7B%22inputMode%22%3A%22text%22%7D)
-- End Session [testState=%7B%22endConfirmOpen%22%3Atrue%7D](http://localhost:3000/?testState=%7B%22endConfirmOpen%22%3Atrue%7D)
-- Escalation Form [testState=%7B%22escalationFormOpen%22%3Atrue%7D](http://localhost:3000/?testState=%7B%22escalationFormOpen%22%3Atrue%7D)
-- Feedback [testState=%7B%22feedbackOpen%22%3Atrue%7D](http://localhost:3000/?testState=%7B%22feedbackOpen%22%3Atrue%7D)
-- Settings [testState=%7B%22settingsOpen%22%3Atrue%2C%22selectedDevices%22%3A%7B%7D%2C%22devices%22%3A%7B%22audioInput%22%3A%5B%5D%2C%22videoInput%22%3A%5B%5D%2C%22audioOutput%22%3A%5B%5D%7D%7D](http://localhost:3000/?testState=%7B%22settingsOpen%22%3Atrue%2C%22selectedDevices%22%3A%7B%7D%2C%22devices%22%3A%7B%22audioInput%22%3A%5B%5D%2C%22videoInput%22%3A%5B%5D%2C%22audioOutput%22%3A%5B%5D%7D%7D)
-- Menu [testState=%7B%22menuOpen%22%3Atrue%7D](http://localhost:3000/?testState=%7B%22menuOpen%22%3Atrue%7D)
-- On-screen Info [testState=%7B%22onScreenInfo%22%3A%7B%22information%22%3A%5B%7B%22type%22%3A%22markdown%22%2C%22markdown%22%3A%22%23%20Heading%5CnParagraph%5Cn\*%20Bullet%20%5Blink%5D(%2F)%22%7D%5D%7D%7D](<http://localhost:3000/?testState=%7B%22onScreenInfo%22%3A%7B%22information%22%3A%5B%7B%22type%22%3A%22markdown%22%2C%22markdown%22%3A%22%23%20Heading%5CnParagraph%5Cn*%20Bullet%20%5Blink%5D(%2F)%22%7D%5D%7D%7D>)
-- Expanded On-screen Info [testState=%7B%22onScreenInfo%22%3A%7B%22information%22%3A%5B%7B%22type%22%3A%22markdown%22%2C%22markdown%22%3A%22%23%20Heading%5CnParagraph%5Cn\*%20Bullet%20%5Blink%5D(%2F)%22%7D%5D%7D%2C%22expandedInfo%22%3Atrue%7D](<http://localhost:3000/?testState=%7B%22onScreenInfo%22%3A%7B%22information%22%3A%5B%7B%22type%22%3A%22markdown%22%2C%22markdown%22%3A%22%23%20Heading%5CnParagraph%5Cn*%20Bullet%20%5Blink%5D(%2F)%22%7D%5D%7D%2C%22expandedInfo%22%3Atrue%7D>)
-- Suggested Responses [testState=%7B%22onScreenInfo%22%3A%7B%22suggestedResponses%22%3A%7B%22id%22%3A1%2C%22mainTitle%22%3A%22You%20can%20ask%20me%20about%3A%22%2C%22suggestedResponses%22%3A%5B%7B%22label%22%3A%22Suggestion%201%22%2C%22utterance%22%3A%221%22%7D%2C%7B%22label%22%3A%22Suggestion%202%22%2C%22utterance%22%3A%222%22%7D%2C%7B%22label%22%3A%22Suggestion%203%22%2C%22utterance%22%3A%223%22%7D%5D%7D%7D%7D\* ](http://localhost:3000/?testState=%7B%22onScreenInfo%22%3A%7B%22suggestedResponses%22%3A%7B%22id%22%3A1%2C%22mainTitle%22%3A%22You%20can%20ask%20me%20about%3A%22%2C%22suggestedResponses%22%3A%5B%7B%22label%22%3A%22Suggestion%201%22%2C%22utterance%22%3A%221%22%7D%2C%7B%22label%22%3A%22Suggestion%202%22%2C%22utterance%22%3A%222%22%7D%2C%7B%22label%22%3A%22Suggestion%203%22%2C%22utterance%22%3A%223%22%7D%5D%7D%7D%7D*)
-
-# Licence
-
-No warranty or support is implied by UneeQ, please refer to LICENCE.md
-
-[repo]: https://gitlab.com/uneeq-oss/react-frontend
-[fork]: https://docs.gitlab.com/ee/user/project/repository/forking_workflow.html#creating-a-fork
-[fork-sync]: https://docs.gitlab.com/ee/user/project/repository/forking_workflow.html
-[markdown-cheatsheet]: https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet
+This project is licensed under the ISC License - see the [LICENSE.md](LICENSE.md) file for details.
