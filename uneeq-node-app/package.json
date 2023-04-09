@@ -1,0 +1,82 @@
+{
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "example-app"
+  ],
+  "scripts": {
+    "start-core": "yarn workspace uneeq-react-core start",
+    "build-core": "yarn workspace uneeq-react-core build",
+    "start-ui": "yarn workspace uneeq-react-ui start",
+    "build-ui": "yarn workspace uneeq-react-ui build",
+    "start-download-pdf": "yarn workspace uneeq-download-pdf start",
+    "build-download-pdf": "yarn workspace uneeq-download-pdf build",
+    "start-packages": "concurrently \"yarn:start-download-pdf\" \"yarn:start-core\" \"yarn:start-ui\"",
+    "build-packages": "yarn build-core && yarn build-download-pdf && yarn build-ui",
+    "start-example-only": "yarn workspace example-app start",
+    "start-example": "concurrently \"yarn:start-download-pdf\" \"yarn:start-packages\" \"yarn:start-example-only\"",
+    "build-example-only": "yarn workspace example-app build",
+    "build-example": "yarn build-packages && yarn build-example-only",
+    "start": "yarn start-example",
+    "build": "yarn build-example",
+    "test": "yarn workspaces run test",
+    "coverage": "yarn workspaces run coverage",
+    "postinstall": "yarn build-packages"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@testing-library/jest-dom": "^5.11.4",
+    "@testing-library/react-hooks": "^3.4.1",
+    "@types/google.maps": "^3.48.1",
+    "@types/lodash.omit": "^4.5.6",
+    "@types/react-calendar": "^3.5.0",
+    "@typescript-eslint/eslint-plugin": "2.x",
+    "@typescript-eslint/parser": "2.x",
+    "concurrently": "^5.1.0",
+    "eslint": "6.x",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-config-react-app": "^5.2.0",
+    "eslint-plugin-flowtype": "3.x",
+    "eslint-plugin-import": "2.x",
+    "eslint-plugin-jsx-a11y": "6.x",
+    "eslint-plugin-prettier": "^3.1.2",
+    "eslint-plugin-react": "7.x",
+    "eslint-plugin-react-hooks": "1.x",
+    "husky": "^4.2.5",
+    "jest-environment-jsdom-sixteen": "^1.0.3",
+    "lint-staged": "^10.2.6",
+    "prettier": "^1.19.1",
+    "prettier-eslint": "^9.0.1",
+    "react-test-renderer": "^16.13.1",
+    "request-promise": "^4.2.5"
+  },
+  "jest": {
+    "watchPathIgnorePatterns": [
+      "__initialStates__"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!<rootDir>/node_modules/",
+      "!src/**/index.ts",
+      "!src/**/*.d.ts",
+      "!src/**/styles.ts",
+      "!src/uneeq-ui/Components/TestBar/**",
+      "!src/serviceWorker.ts",
+      "!src/theme.ts",
+      "!src/app/config.ts",
+      "!src/setupTests.ts",
+      "!src/test-utils.tsx",
+      "!src/react-app-env.d.ts",
+      "!src/index.tsx"
+    ]
+  },
+  "dependencies": {
+    "@googlemaps/react-wrapper": "^1.1.24",
+    "google-map-react": "^2.1.10",
+    "html-to-text": "^8.1.0",
+    "react-calendar": "^3.7.0",
+    "react-date-object": "^2.1.5",
+    "react-multi-date-picker": "^3.3.0",
+    "sass": "^1.43.4"
+  }
+}

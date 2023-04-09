@@ -1,0 +1,6 @@
+---
+applications:
+- name: sara-react
+  random-route: true
+  path: ./
+  memory: 256M
